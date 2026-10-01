@@ -1,4 +1,14 @@
 {
+  "plugin_quota": {
+    "loading": "重新整理中",
+    "error": "重新整理失敗",
+    "success": "已取得額度",
+    "unknown": "未知 / 未提供",
+    "stale": "顯示上次成功資料",
+    "last_success": "最後成功重新整理",
+    "balance": "餘額積分",
+    "expires_24h": "24 小時內過期"
+  },
   "manager_updates": {
     "server_version": "Manager Server 版本",
     "new_version": "CPAMP {{version}} 已發佈",

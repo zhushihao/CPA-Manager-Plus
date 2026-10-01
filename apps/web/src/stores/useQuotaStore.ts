@@ -17,9 +17,13 @@ import type {
 import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { STORAGE_KEY_QUOTA_CACHE } from '@/utils/constants';
 
+import type { PluginQuotaState } from '@/components/quota/quotaConfigs';
+
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
 interface QuotaStoreState {
+  pluginQuota: Record<string, PluginQuotaState>;
+  setPluginQuota: (updater: QuotaUpdater<Record<string, PluginQuotaState>>) => void;
   cacheScope: string;
   cacheGeneration: number;
   antigravityQuota: Record<string, AntigravityQuotaState>;
@@ -48,6 +52,7 @@ const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
 };
 
 const emptyQuotaState = {
+  pluginQuota: {},
   antigravityQuota: {},
   claudeQuota: {},
   codexQuota: {},
@@ -111,6 +116,7 @@ export const useQuotaStore = create<QuotaStoreState>()(
       cacheScope: '',
       cacheGeneration: 0,
       ...emptyQuotaState,
+      setPluginQuota: (updater) => set((state) => ({ pluginQuota: resolveUpdater(updater, state.pluginQuota) })),
       setAntigravityQuota: (updater) =>
         set((state) => ({
           antigravityQuota: resolveUpdater(updater, state.antigravityQuota),

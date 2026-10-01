@@ -60,7 +60,18 @@ import {
   scopeQuotaStateToCredential,
 } from '@/utils/quota/credentialScope';
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai' | 'devin' | 'meta';
+import { fetchPluginQuota, type PluginQuotaData } from '@/utils/quota/pluginQuota';
+
+export type PluginQuotaState = CredentialScopedQuotaState & {
+  status: 'loading' | 'success' | 'error';
+  data?: PluginQuotaData;
+  fetchedAtMs?: number;
+  failedAtMs?: number;
+  error?: string;
+  errorStatus?: number;
+};
+
+type QuotaType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai' | 'devin' | 'meta' | 'workbuddy' | 'qoder';
 
 export type { QuotaFetchContext };
 
@@ -859,6 +870,19 @@ export const DEVIN_CONFIG: QuotaConfig<DevinQuotaState, DevinQuotaData> = {
   }),
   scopeState: scopeCredentialQuotaState,
 };
+
+const pluginConfig = (type: 'workbuddy' | 'qoder'): QuotaConfig<PluginQuotaState, PluginQuotaData> => ({
+  type,
+  i18nPrefix: 'accounts',
+  fetchQuota: (file, _t, scope) => fetchPluginQuota(file, scope),
+  getStoreKey: getQuotaCredentialStoreKey,
+  buildLoadingState: (file) => ({ status: 'loading', ...buildQuotaCredentialIdentity(file) }),
+  buildSuccessState: (data, file) => ({ status: 'success', data, fetchedAtMs: Date.now(), ...buildQuotaCredentialIdentity(file) }),
+  buildErrorState: (error, errorStatus, file) => ({ status: 'error', error, errorStatus, ...buildQuotaCredentialIdentity(file) }),
+  scopeState: scopeCredentialQuotaState,
+});
+export const WORKBUDDY_CONFIG = pluginConfig('workbuddy');
+export const QODER_CONFIG = pluginConfig('qoder');
 
 export const META_CONFIG: QuotaConfig<MetaQuotaState, MetaQuotaData> = {
   type: 'meta',

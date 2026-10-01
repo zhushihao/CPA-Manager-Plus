@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { JSX } from 'react';
 import { Button } from '@/components/ui/Button';
+import { PluginQuotaPanel } from '@/components/quota/PluginQuotaPanel';
 import {
   IconBinary,
   IconChartLine,
@@ -95,6 +96,9 @@ const MetricCell = ({ icon, tone, label, value, valueTitle }: MetricCellProps): 
 };
 
 interface AccountQuotaTabProps {
+  pluginQuota?: import('@/components/quota/quotaConfigs').PluginQuotaState;
+  pluginProvider?: boolean;
+  pluginRefreshing?: boolean;
   detailView: AccountDetailViewModel;
   windowUsageError: string;
   historyAvailable: boolean;
@@ -133,6 +137,9 @@ const renderResetCreditRemainingText = (
 };
 
 export function AccountQuotaTab({
+  pluginQuota,
+  pluginProvider,
+  pluginRefreshing,
   detailView,
   windowUsageError,
   historyAvailable,
@@ -175,6 +182,8 @@ export function AccountQuotaTab({
   const visibleResetCreditExpiries = detailView.quota.resetCreditExpiries.filter(
     (item) => item.expiresAtMs > nowMs
   );
+
+  if (pluginProvider) return <div className={styles.quotaTab} data-account-quota-tab="true"><PluginQuotaPanel state={pluginQuota} refreshing={pluginRefreshing} /></div>;
 
   return (
     <div className={styles.quotaTab} data-account-quota-tab="true">

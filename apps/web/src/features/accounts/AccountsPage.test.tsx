@@ -568,6 +568,7 @@ const { mocks } = vi.hoisted(() => {
         kimiQuota: {},
         metaQuota: {},
         xaiQuota: {},
+        pluginQuota: {},
         setAntigravityQuota: vi.fn(),
         setClaudeQuota: vi.fn(),
         setCodexQuota: vi.fn(),
@@ -575,6 +576,7 @@ const { mocks } = vi.hoisted(() => {
         setKimiQuota: vi.fn(),
         setMetaQuota: vi.fn(),
         setXaiQuota: vi.fn(),
+        setPluginQuota: vi.fn(),
       },
       t: (key: string, options?: Record<string, unknown>) => {
         if (key === 'auth_files.codex_plan_filter_unknown') return 'Unknown plan';
@@ -1446,6 +1448,7 @@ describe('AccountsPage replacement flows', () => {
     mocks.quotaState.kimiQuota = {};
     mocks.quotaState.metaQuota = {};
     mocks.quotaState.xaiQuota = {};
+    mocks.quotaState.pluginQuota = {};
     mocks.quotaDisplayWindowsOverride = null;
     mocks.quotaState.setAntigravityQuota.mockReset();
     mocks.quotaState.setClaudeQuota.mockReset();
@@ -1454,6 +1457,7 @@ describe('AccountsPage replacement flows', () => {
     mocks.quotaState.setKimiQuota.mockReset();
     mocks.quotaState.setMetaQuota.mockReset();
     mocks.quotaState.setXaiQuota.mockReset();
+    mocks.quotaState.setPluginQuota.mockReset();
     mocks.loadFiles.mockReset();
     mocks.loadFiles.mockImplementation(async () => mocks.files);
     mocks.lastAuthFilesDataOptions = null;
@@ -9750,6 +9754,108 @@ describe('AccountsPage replacement flows', () => {
     expect(treeText(renderer)).toContain('accounts.quota_source_none');
     expect(treeText(renderer)).not.toContain('accounts.quota_details_only');
     expect(treeText(renderer)).not.toContain('SUM');
+  });
+
+  it('renders the plugin quota panel without the native empty-window placeholder on workbuddy rows', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-15T09:00:00').getTime());
+    const hourMs = 3_600_000;
+    const nowMs = Date.now();
+    const localProviderTime = (ms: number): string => {
+      const date = new Date(ms);
+      const pad = (value: number) => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+    const file = {
+      name: 'wb.json',
+      type: 'workbuddy',
+      provider: 'workbuddy',
+      authIndex: 'wb-1',
+      account: 'wb@example.com',
+      disabled: false,
+    } as AuthFileItem;
+    mocks.files = [file];
+    const storeKey = getQuotaCredentialStoreKey(file);
+    mocks.quotaState.pluginQuota = {
+      [storeKey]: {
+        status: 'success',
+        authFileKey: storeKey,
+        authFileIdentityVerified: true,
+        fetchedAtMs: 1_000,
+        data: {
+          summary: [
+            {
+              key: 'credits_remaining',
+              label: '剩余积分',
+              value: 10206,
+              unit: 'credits',
+              format: 'number',
+            },
+          ],
+          subscription: null,
+          groups: [
+            {
+              displayName: 'CodeBuddy个人版运营补偿包',
+              buckets: [
+                {
+                  window: 'cycle',
+                  remainingFraction: 0.61,
+                  resetTime: localProviderTime(nowMs + 2 * hourMs),
+                  description: '剩余 3061 / 共 5000',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    const renderer = await renderAccountsPage();
+    await flushPromises();
+    const selectionKey = getAuthFileSelectionKey(file);
+    const assertPluginQuotaCard = (card: ReactTestInstance, layout: 'table' | 'grid') => {
+      expect(card.findAllByProps({ 'data-plugin-quota-panel': true })).toHaveLength(1);
+      expect(card.findAllByProps({ 'data-account-quota-empty': 'true' })).toHaveLength(0);
+      expect(readText(card)).not.toContain('accounts.quota_details_only');
+      expect(readText(card)).toContain('剩余积分');
+      expect(readText(card)).toContain('10,206 credits');
+      // 仅两项指标 + 状态行：24h 过期 = 窗口内唯一桶 "剩余 3061 / 共 5000"
+      expect(card.findAllByProps({ 'data-plugin-quota-metric': 'true' })).toHaveLength(2);
+      expect(readText(card)).toContain('plugin_quota.expires_24h');
+      expect(readText(card)).toContain('3,061');
+      expect(readText(card)).not.toContain('plugin_quota.groups_toggle');
+      expect(readText(card)).not.toContain('plugin_quota.remaining_ratio');
+      expect(readText(card)).not.toContain('plugin_quota.subscription');
+      const quotaRegion = card.findAll(
+        (node) =>
+          layout === 'table'
+            ? node.props['data-account-detail-trigger'] === 'quota'
+            : typeof node.props?.className === 'string' &&
+              node.props.className.includes('accountGridCardQuota') &&
+              !node.props.className.includes('accountGridCardQuotaList') &&
+              !node.props.className.includes('accountGridCardQuotaGroup')
+      )[0];
+      expect(quotaRegion).toBeTruthy();
+      const labelText = String(quotaRegion.props['aria-label'] ?? quotaRegion.props['title'] ?? '');
+      expect(labelText).toContain('剩余积分');
+      expect(labelText).toContain('10,206 credits');
+      expect(labelText).not.toContain('accounts.quota_details_only');
+      expect(labelText).not.toContain('accounts.quota_source_none');
+    };
+
+    assertPluginQuotaCard(findAccountCardByKey(renderer, selectionKey), 'table');
+
+    await act(async () => {
+      renderer.root
+        .find(
+          (node) => node.type === 'button' && node.props['aria-label'] === 'accounts.view_mode_grid'
+        )
+        .props.onClick();
+      await Promise.resolve();
+    });
+    await flushPromises();
+
+    assertPluginQuotaCard(findAccountCardByKey(renderer, selectionKey), 'grid');
   });
 
   it('renders historical usage alongside the quota trigger', async () => {

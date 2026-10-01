@@ -830,6 +830,26 @@ export const buildAccountQuotaDisplayWindows = (
   row: AccountRow,
   options: BuildAccountQuotaDisplayWindowsOptions
 ): AccountQuotaDisplayWindow[] => {
+  if (row.provider === 'workbuddy' || row.provider === 'qoder') {
+    const state = getCredentialScopedQuotaState(options.stores.pluginQuota ?? {}, row.raw);
+    return state?.data?.groups.flatMap((group, groupIndex) => group.buckets.map((bucket, bucketIndex) => ({
+      key: `${row.provider}:${groupIndex}:${bucketIndex}`,
+      label: bucket.description || bucket.window || '-',
+      groupLabel: group.displayName,
+      description: bucket.description,
+      kind: 'unknown' as const,
+      remainingPercent: bucket.remainingFraction === null ? null : bucket.remainingFraction * 100,
+      usedPercent: null,
+      resetLabel: bucket.resetTime || '-',
+      resetAccuracy: 'unknown' as const,
+      resetAtMs: null,
+      limitWindowSeconds: null,
+      fromMs: null,
+      toMs: null,
+      observedAtMs: state.fetchedAtMs ?? null,
+    }))) ?? [];
+  }
+
   if (row.provider === 'codex') {
     const windows = buildCodexQuotaDisplayWindows(row, options);
     if (windows.length) return windows;

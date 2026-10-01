@@ -1,4 +1,14 @@
 {
+  "plugin_quota": {
+    "loading": "Обновление",
+    "error": "Ошибка обновления",
+    "success": "Квота получена",
+    "unknown": "Неизвестно / не указано",
+    "stale": "Последние успешные данные",
+    "last_success": "Последнее успешное обновление",
+    "balance": "Баланс кредитов",
+    "expires_24h": "Истекает за 24 часа"
+  },
   "manager_updates": {
     "server_version": "Версия Manager Server",
     "new_version": "Доступна версия CPAMP {{version}}",

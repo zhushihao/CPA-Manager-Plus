@@ -63,8 +63,10 @@ import {
   type QuotaSetter,
 } from '@/components/quota';
 import {
-  getScopedQuotaState,
+  getScopedQuotaState, WORKBUDDY_CONFIG, QODER_CONFIG,
 } from '@/components/quota/quotaConfigs';
+import { PluginQuotaPanel } from '@/components/quota/PluginQuotaPanel';
+import { formatPluginQuotaMetric } from '@/utils/quota/pluginQuota';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useInterval } from '@/hooks/useInterval';
 import { usePanelFeatureAvailability } from '@/hooks/usePanelFeatureAvailability';
@@ -1375,6 +1377,7 @@ export function AccountsPage() {
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const metaQuota = useQuotaStore((state) => state.metaQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
+  const pluginQuota = useQuotaStore((state) => state.pluginQuota);
   const baseQuotaStores = useMemo(
     () => ({
       antigravityQuota,
@@ -1384,8 +1387,9 @@ export function AccountsPage() {
       kimiQuota,
       metaQuota,
       xaiQuota,
+      pluginQuota,
     }),
-    [antigravityQuota, claudeQuota, codexQuota, devinQuota, kimiQuota, metaQuota, xaiQuota]
+    [antigravityQuota, claudeQuota, codexQuota, devinQuota, kimiQuota, metaQuota, xaiQuota, pluginQuota]
   );
   const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
   const setClaudeQuota = useQuotaStore((state) => state.setClaudeQuota);
@@ -6379,6 +6383,8 @@ export function AccountsPage() {
   }, [detailEventsAutoLoadKey, detailTab, loadDetailEvents, selectedRow]);
 
 
+  const setPluginQuota = useQuotaStore((state) => state.setPluginQuota);
+
   const refreshQuotaForRow = useCallback(
     async (
       row: AccountRow,
@@ -6407,6 +6413,11 @@ export function AccountsPage() {
         });
       };
       switch (row.provider) {
+        case 'workbuddy':
+        case 'qoder': {
+          const config = row.provider === 'workbuddy' ? WORKBUDDY_CONFIG : QODER_CONFIG;
+          return toAccountQuotaRefreshOutcome(await refreshWithConfig(config, setPluginQuota, getScopedQuotaState(config, pluginQuota, row.raw)));
+        }
         case CODEX_CONFIG.type: {
           const config = mode === 'detail' ? CODEX_CONFIG : CODEX_SUMMARY_CONFIG;
           const result = await refreshWithConfig(
@@ -6479,6 +6490,8 @@ export function AccountsPage() {
     },
     [
       invalidateCodexCredentialStatusForSelectionKeys,
+      pluginQuota,
+      setPluginQuota,
       setAntigravityQuota,
       setClaudeQuota,
       setCodexQuota,
@@ -8673,6 +8686,13 @@ export function AccountsPage() {
     );
   };
 
+  const renderPluginQuota = (row: AccountRow) => {
+    if (row.provider !== 'workbuddy' && row.provider !== 'qoder') return null;
+    const config = row.provider === 'workbuddy' ? WORKBUDDY_CONFIG : QODER_CONFIG;
+    const state = getScopedQuotaState(config, pluginQuota, row.raw);
+    return <PluginQuotaPanel state={state} refreshing={quotaRefreshing || isManualQuotaRefreshing(row)} />;
+  };
+
   const resolveAccountRowContext = (row: AccountRow) => {
     const recommendation = recommendationBySelectionKey.get(row.selectionKey) ?? null;
     const accountHistory = accountHistoryByRowKey.get(row.selectionKey) ?? null;
@@ -8716,17 +8736,28 @@ export function AccountsPage() {
       codexResetCreditsCount !== null &&
       codexResetCreditsCount > 0;
     const providerIcon = getAuthFileIcon(row.provider, resolvedTheme);
+    const isPluginQuotaRow = row.provider === 'workbuddy' || row.provider === 'qoder';
+    const pluginQuotaSummaryText = (() => {
+      if (!isPluginQuotaRow) return '';
+      const config = row.provider === 'workbuddy' ? WORKBUDDY_CONFIG : QODER_CONFIG;
+      const data = getScopedQuotaState(config, pluginQuota, row.raw)?.data;
+      if (!data || data.summary.length === 0) return '';
+      return data.summary
+        .map((metric) => `${metric.label}: ${formatPluginQuotaMetric(metric, i18n.language)}`)
+        .join('\n');
+    })();
     const quotaEmptyLabel =
       quotaWindows.length > 0
         ? t('accounts.quota_details_only')
         : t('accounts.quota_source_none');
-    const quotaWindowTitle =
-      mainListWindows
-        .map((window) => {
-          const label = getQuotaWindowReadableLabel(window, t);
-          return `${label}: ${formatPercent(window.remainingPercent)}`;
-        })
-        .join('\n') || quotaEmptyLabel;
+    const quotaWindowTitle = isPluginQuotaRow
+      ? pluginQuotaSummaryText || quotaEmptyLabel
+      : mainListWindows
+          .map((window) => {
+            const label = getQuotaWindowReadableLabel(window, t);
+            return `${label}: ${formatPercent(window.remainingPercent)}`;
+          })
+          .join('\n') || quotaEmptyLabel;
     const healthTitle = t(
       item.health.tooltipKey,
       formatQuotaResetTooltipParams(
@@ -8762,6 +8793,7 @@ export function AccountsPage() {
       codexResetCreditsCount,
       hasCodexResetCredits,
       providerIcon,
+      isPluginQuotaRow,
       quotaEmptyLabel,
       quotaWindowTitle,
       healthTitle,
@@ -9339,6 +9371,7 @@ export function AccountsPage() {
                           }
                     }
                   >
+                    {renderPluginQuota(row)}
                     {ctx.mainListWindows.length > 0 ? (
                       <div className={styles.accountGridCardQuotaList}>
                         {row.provider === ANTIGRAVITY_CONFIG.type
@@ -9371,7 +9404,7 @@ export function AccountsPage() {
                               )
                             )}
                       </div>
-                    ) : (
+                    ) : ctx.isPluginQuotaRow ? null : (
                       <span className={styles.quotaEmptyState} data-account-quota-empty="true">
                         {ctx.quotaEmptyLabel}
                       </span>
@@ -9601,7 +9634,8 @@ export function AccountsPage() {
                       onOpen: () => void openAccountDetail(row, 'quota'),
                       children: (
                         <span className={styles.quotaWindowGrid} title={ctx.quotaWindowTitle}>
-                        {ctx.mainListWindows.length > 0 ? (
+                        {renderPluginQuota(row)}
+                    {ctx.mainListWindows.length > 0 ? (
                           ctx.mainListWindows.map((window, windowIndex) =>
                             renderSingleQuotaWindowCard(
                               row,
@@ -9612,7 +9646,7 @@ export function AccountsPage() {
                               ctx.quotaLifecycleBarOverride
                             )
                           )
-                        ) : (
+                        ) : ctx.isPluginQuotaRow ? null : (
                           <span className={styles.quotaEmptyState} data-account-quota-empty="true">
                             {ctx.quotaEmptyLabel}
                           </span>
@@ -9745,6 +9779,9 @@ export function AccountsPage() {
       if (detailTab === 'quota') {
         return (
           <AccountQuotaTab
+            pluginProvider={selectedRow.provider === 'workbuddy' || selectedRow.provider === 'qoder'}
+            pluginRefreshing={quotaRefreshing || selectedQuotaRefreshing}
+            pluginQuota={selectedRow.provider === 'workbuddy' || selectedRow.provider === 'qoder' ? getCredentialScopedQuotaState(pluginQuota, selectedRow.raw) : undefined}
             detailView={detailView}
             windowUsageError={accountWindowUsageError}
             historyAvailable={requestHistoryAvailable}

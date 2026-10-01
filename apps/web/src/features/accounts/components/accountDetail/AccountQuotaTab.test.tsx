@@ -30,6 +30,34 @@ vi.mock('react-i18next', async (importOriginal) => {
   };
 });
 
+describe('AccountQuotaTab plugin provider branch', () => {
+  it('routes workbuddy/qoder to the plugin panel instead of native windows', () => {
+    const detailView = {
+      identity: { rowKey: 'q.json\u0000a', name: 'q.json', provider: 'qoder', type: 'qoder', authIndex: 'a', account: 'q' },
+      quota: { windows: [], resetCreditsAvailableCount: null, resetCreditExpiries: [], cooldown: null },
+      history: null,
+    } as unknown as AccountDetailViewModel;
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AccountQuotaTab
+          pluginProvider
+          pluginQuota={{ status: 'success', authFileKey: 'q.json', authFileIdentityVerified: true, data: { summary: [], subscription: null, groups: [] }, fetchedAtMs: 1 }}
+          detailView={detailView}
+          windowUsageError=""
+          historyAvailable={false}
+          historyRefreshing={false}
+          onRefreshHistory={vi.fn()}
+          onResetQuota={vi.fn()}
+          resetQuotaDisabled={false}
+        />
+      );
+    });
+    expect(renderer.root.findAllByProps({ 'data-plugin-quota-panel': true })).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ 'data-quota-progress': 'shared' })).toHaveLength(0);
+  });
+});
+
 describe('AccountQuotaTab timer crossing expiry', () => {
   const baseNow = 1_000_000;
 

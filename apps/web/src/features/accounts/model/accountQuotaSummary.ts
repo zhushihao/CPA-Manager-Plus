@@ -73,6 +73,7 @@ export interface AccountQuotaSummary {
 }
 
 export interface AccountQuotaStores {
+  pluginQuota?: Record<string, import('@/components/quota/quotaConfigs').PluginQuotaState>;
   antigravityQuota: Record<string, AntigravityQuotaState>;
   claudeQuota: Record<string, ClaudeQuotaState>;
   codexQuota: Record<string, CodexQuotaState>;
@@ -899,6 +900,21 @@ export const resolveAccountQuota = (
       resetAccuracy: 'unknown',
       planType: filePlanType,
       source: 'none',
+    };
+  }
+
+  if (provider === 'workbuddy' || provider === 'qoder') {
+    const quota = getCredentialScopedQuotaState(stores.pluginQuota ?? {}, file);
+    if (!quota) return emptyQuota(null);
+    const balance = quota.data?.summary.find((metric) => metric.key === 'credits_remaining');
+    return {
+      ...emptyQuota(null),
+      source: 'cache',
+      status: quota.status === 'loading' ? 'loading' : quota.status === 'error' ? 'error' : quota.data ? 'ok' : 'unknown',
+      creditsBalance: balance?.format === 'number' && balance.value !== null ? `${balance.value}${balance.unit ? ` ${balance.unit}` : ''}` : null,
+      fetchedAtMs: quota.fetchedAtMs,
+      error: quota.error,
+      errorStatus: quota.errorStatus,
     };
   }
 

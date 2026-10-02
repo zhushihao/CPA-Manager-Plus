@@ -86,9 +86,6 @@ export function PluginQuotaPanel({ state }: { state?: PluginQuotaState; refreshi
   const expiringSum = data ? sumPluginQuotaCreditsExpiringWithin24h(data, nowMs) : null;
   return (
     <div data-plugin-quota-panel>
-      {!data && !(state?.status === 'error' && state?.error) ? (
-        <div>{t('plugin_quota.unknown')}</div>
-      ) : null}
       {state?.error ? <div role="alert">{state.error}</div> : null}
       <PluginMetricRow
         icon={<IconSidebarQuota size={16} />}

@@ -3,7 +3,6 @@
     "loading": "重新整理中",
     "error": "重新整理失敗",
     "success": "已取得額度",
-    "unknown": "未知 / 未提供",
     "stale": "顯示上次成功資料",
     "last_success": "最後成功重新整理",
     "balance": "餘額積分",

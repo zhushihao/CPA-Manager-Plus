@@ -3,7 +3,6 @@
     "loading": "刷新中",
     "error": "刷新失败",
     "success": "额度已获取",
-    "unknown": "未知 / 未提供",
     "stale": "显示上次成功数据",
     "last_success": "最后成功刷新",
     "balance": "余额积分",

@@ -3,7 +3,6 @@
     "loading": "Refreshing",
     "error": "Refresh failed",
     "success": "Quota available",
-    "unknown": "Unknown / not provided",
     "stale": "Previous successful data",
     "last_success": "Last successful refresh",
     "balance": "Balance credits",

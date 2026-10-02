@@ -132,9 +132,9 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
     expect(html).not.toContain('>5<');
     expect(html).not.toContain('>2<');
   });
-  it('renders two dash rows with the unknown status without data and never prints unknown as zero (synthetic)', () => {
+  it('renders two dash rows without data and never prints unknown as zero (synthetic)', () => {
     const html = renderToStaticMarkup(<PluginQuotaPanel />);
-    expect(html).toContain('plugin_quota.unknown');
+    expect(html).not.toContain('plugin_quota.unknown');
     expect(html.match(/data-plugin-quota-metric="true"/g)).toHaveLength(2);
     expect(html).toContain('plugin_quota.balance');
     expect(html).not.toContain('width:');

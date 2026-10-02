@@ -94,6 +94,27 @@ const quotaStateForScope = (cacheScope: string, cacheGeneration: number) => ({
   ...emptyQuotaState,
 });
 
+// Plugin quota persists success states only: error entries carry no usable
+// payload, so a failure observed by a dead page must not resurrect on refresh.
+const filterPersistablePluginQuota = (
+  quota: Record<string, PluginQuotaState> | undefined
+): Record<string, PluginQuotaState> => {
+  if (!quota) return {};
+
+  return Object.fromEntries(
+    Object.values(quota)
+      .filter(
+        (item): item is PluginQuotaState & { authFileKey: string } =>
+          Boolean(
+            item?.authFileKey?.trim() &&
+              item.authFileIdentityVerified === true &&
+              item.status === 'success'
+          )
+      )
+      .map((item) => [item.authFileKey, item])
+  );
+};
+
 const filterPersistableCodexQuota = (
   quota: Record<string, CodexQuotaState> | undefined
 ): Record<string, CodexQuotaState> => {
@@ -172,6 +193,7 @@ export const useQuotaStore = create<QuotaStoreState>()(
       })),
       partialize: (state) => ({
         cacheScope: state.cacheScope,
+        pluginQuota: filterPersistablePluginQuota(state.pluginQuota),
         antigravityQuota: filterPersistableQuotaStates(state.antigravityQuota),
         claudeQuota: filterPersistableQuotaStates(state.claudeQuota),
         codexQuota: filterPersistableCodexQuota(state.codexQuota),
@@ -185,6 +207,7 @@ export const useQuotaStore = create<QuotaStoreState>()(
         return {
           ...currentState,
           cacheScope: typeof persisted?.cacheScope === 'string' ? persisted.cacheScope : '',
+          pluginQuota: filterPersistablePluginQuota(persisted?.pluginQuota),
           antigravityQuota: filterPersistableQuotaStates(persisted?.antigravityQuota),
           claudeQuota: filterPersistableQuotaStates(persisted?.claudeQuota),
           codexQuota: filterPersistableCodexQuota(persisted?.codexQuota),

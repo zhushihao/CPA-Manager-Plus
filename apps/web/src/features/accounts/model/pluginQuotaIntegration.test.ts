@@ -17,7 +17,7 @@ describe('plugin summary/window integration (real sanitized qoder fixture)', () 
     expect(summary.status).toBe('ok');
     expect(summary.remainingPercent).toBeNull();
     expect(summary.usedPercent).toBeNull();
-    expect(summary.creditsBalance).toBe('300 credits');
+    expect(summary.creditsBalance).toBe(`${qoder.response.body.summary[0].value} credits`);
   });
   it('does not reuse old credential data for another auth_index (synthetic)', () => {
     expect(resolveAccountQuota({ ...file, auth_index: 'new-credential' }, stores).source).toBe('none');

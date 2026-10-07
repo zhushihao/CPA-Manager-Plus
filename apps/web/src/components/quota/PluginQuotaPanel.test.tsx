@@ -29,18 +29,18 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
 
   it('renders exactly two native metric rows (balance and 24h expiring) without redundant status sentences (real fixture)', () => {
     vi.useFakeTimers();
-    // 自 2026-10-07 12:00 起的 24h 窗口内，真实 fixture 只有 "2026-10-08 00:02:40"（剩余 12）一个桶。
+    // 自 2026-10-07 12:00 起的 24h 窗口内，真实 fixture 只有 "2026-10-08 00:02:40"（剩余 0）一个桶。
     vi.setSystemTime(new Date('2026-10-07T12:00:00').getTime());
     const html = renderToStaticMarkup(<PluginQuotaPanel state={{ status: 'success', data: parsePluginQuota(workbuddy.response.body), fetchedAtMs: 1000 }} />);
     expect(html).not.toContain('plugin_quota.success');
     expect(html).not.toContain('plugin_quota.last_success');
     expect(html.match(/data-plugin-quota-metric="true"/g)).toHaveLength(2);
     expect(html).toContain('剩余积分');
-    expect(html).toContain('10,206 credits');
-    // 余额行附剩余比例进度条: 10206 / 50706 → 20%
-    expect(html).toContain('width:20%');
+    expect(html).toContain('8,313 credits');
+    // 余额行附剩余比例进度条，分母 = 在册包“共 Y”求和 12,986（不是 summary 历史累计 48,813）: 8313 / 12986 → 64%
+    expect(html).toContain('width:64%');
     expect(html).toContain('plugin_quota.expires_24h');
-    expect(html).toContain('>12<');
+    expect(html).toContain('>0<');
     expect(html).not.toContain('plugin_quota.groups_toggle');
     expect(html).not.toContain('plugin_quota.remaining_ratio');
     expect(html).not.toContain('plugin_quota.reset');
@@ -59,8 +59,8 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
     expect(html).not.toContain('plugin_quota.loading');
     expect(html).not.toContain('plugin_quota.last_success');
     expect(html).not.toContain('plugin_quota.success');
-    expect(html).toContain('10,206 credits');
-    expect(html).toContain('>12<');
+    expect(html).toContain('8,313 credits');
+    expect(html).toContain('>0<');
   });
   it('renders no refreshing or stale notice while loading, keeping the last data visible (synthetic)', () => {
     vi.useFakeTimers();
@@ -146,6 +146,19 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
     expect(html).toContain('>-');
     expect(html).not.toContain('已用积分');
     expect(html).not.toContain('40,500');
+    expect(html).not.toContain('width:');
+  });
+  it('hides the bar when no bucket total parses even though summary size exists (qoder-shaped, synthetic)', () => {
+    const data = parsePluginQuota({
+      summary: [
+        { key: 'credits_remaining', label: '剩余积分', value: 998, unit: 'credits', format: 'number' },
+        { key: 'credits_size', label: '总额度', value: 1000, unit: 'credits', format: 'number' },
+      ],
+      subscription: null,
+      groups: [{ displayName: 'g', buckets: [{ window: 'cycle', remainingFraction: 0.998, description: '赠送/签到额度：余 998 / 1000 积分（已用 2）' }] }],
+    });
+    const html = renderToStaticMarkup(<PluginQuotaPanel state={{ status: 'success', data }} />);
+    expect(html).toContain('998 credits');
     expect(html).not.toContain('width:');
   });
   it('localizes every key in all four shipped locales', () => {

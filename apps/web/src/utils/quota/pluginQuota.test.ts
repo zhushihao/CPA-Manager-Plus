@@ -19,7 +19,7 @@ describe('plugin quota (real sanitized fixtures; adversarial cases synthetic)', 
     for (const [provider, config] of [['workbuddy', WORKBUDDY_CONFIG], ['qoder', QODER_CONFIG]] as const) {
       expect(isQuotaRefreshSupportedProvider(provider)).toBe(true);
       expect(config.type).toBe(provider);
-      expect(config.buildSuccessState(parsePluginQuota(qoder.response.body), { name: 'fixture', provider, auth_index: 'fixture' }).data?.summary[1].value).toBe(0);
+      expect(config.buildSuccessState(parsePluginQuota(qoder.response.body), { name: 'fixture', provider, auth_index: 'fixture' }).data?.summary[1].value).toBe(qoder.response.body.summary[1].value);
     }
   });
   it.each([workbuddy, qoder])('retains summary and independent groups', (fixture) => {

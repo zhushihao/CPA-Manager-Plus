@@ -7,6 +7,7 @@ import cardStyles from '@/features/accounts/components/QuotaWindowCard.module.sc
 import type { PluginQuotaState } from './quotaConfigs';
 import {
   formatPluginQuotaMetric,
+  sumPluginQuotaBucketTotals,
   sumPluginQuotaCreditsExpiringWithin24h,
 } from '@/utils/quota/pluginQuota';
 
@@ -26,7 +27,7 @@ interface PluginMetricRowProps {
   tone: MetricTone;
   label: string;
   value: string;
-  /** 仅余额行使用：remaining/size 均为有限正数时才渲染进度条。 */
+  /** 仅余额行使用：剩余与在册包总额均为有限正数时才渲染进度条。 */
   balancePercent?: number | null;
 }
 
@@ -71,17 +72,18 @@ export function PluginQuotaPanel({ state }: { state?: PluginQuotaState; refreshi
   const [nowMs, setNowMs] = useState(() => Date.now());
   useInterval(() => setNowMs(Date.now()), 60_000);
   const balance = data?.summary.find((metric) => metric.key === 'credits_remaining') ?? null;
-  const balanceSize = data?.summary.find((metric) => metric.key === 'credits_size') ?? null;
+  // 进度条分母 = 在册积分包“共 Y”求和（与分组明细同口径）；summary 的 credits_size 是
+  // 历史累计发放（含已用完/过期后从分组消失的包），用它会得到与包列表相悖的极低比例。
+  const activeBucketTotal = data ? sumPluginQuotaBucketTotals(data) : null;
   const balancePercent =
     balance &&
-    balanceSize &&
     balance.value !== null &&
     Number.isFinite(balance.value) &&
     balance.value > 0 &&
-    balanceSize.value !== null &&
-    Number.isFinite(balanceSize.value) &&
-    balanceSize.value > 0
-      ? (balance.value / balanceSize.value) * 100
+    activeBucketTotal !== null &&
+    Number.isFinite(activeBucketTotal) &&
+    activeBucketTotal > 0
+      ? (balance.value / activeBucketTotal) * 100
       : null;
   const expiringSum = data ? sumPluginQuotaCreditsExpiringWithin24h(data, nowMs) : null;
   return (

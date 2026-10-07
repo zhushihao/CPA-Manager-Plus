@@ -84,34 +84,6 @@ const parsePluginRemainingFromDescription = (description: string | undefined): n
   return Number.isFinite(remaining) ? remaining : null;
 };
 
-const parsePluginTotalFromDescription = (description: string | undefined): number | null => {
-  if (!description) return null;
-  const match = /^剩余\s*-?\d+(?:\.\d+)?\s*\/\s*共\s*(-?\d+(?:\.\d+)?)/.exec(description.trim());
-  if (!match) return null;
-  const total = Number(match[1]);
-  return Number.isFinite(total) ? total : null;
-};
-
-/**
- * 在册积分包总额求和：description 呈 “剩余 X / 共 Y” 形态的桶取 Y 求和，解析不了的桶跳过。
- * 口径 = 当前在册包的共数，与分组明细观感一致；summary 的 credits_size 是历史累计发放
- * （含已用完/过期后从分组里消失的包），用它会得到与包列表相悖的极低剩余比例。
- * 无可解析桶时返回 null（面板不画进度条，如 qoder 的“余 X / Y 积分”形态）。
- */
-export function sumPluginQuotaBucketTotals(data: PluginQuotaData): number | null {
-  let parseableBuckets = 0;
-  let total = 0;
-  for (const group of data.groups) {
-    for (const bucket of group.buckets) {
-      const bucketTotal = parsePluginTotalFromDescription(bucket.description);
-      if (bucketTotal === null) continue;
-      parseableBuckets += 1;
-      total += bucketTotal;
-    }
-  }
-  return parseableBuckets > 0 ? total : null;
-}
-
 /**
  * 纯展示聚合：resetTime 落在 (nowMs, nowMs + 24h] 且 description 呈
  * “剩余 X / 共 Y” 形态的桶，取 X 求和；解析不了的桶跳过并不计入。

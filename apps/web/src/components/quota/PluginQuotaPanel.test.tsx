@@ -37,8 +37,8 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
     expect(html.match(/data-plugin-quota-metric="true"/g)).toHaveLength(2);
     expect(html).toContain('剩余积分');
     expect(html).toContain('8,313 credits');
-    // 余额行附剩余比例进度条，分母 = 在册包“共 Y”求和 12,986（不是 summary 历史累计 48,813）: 8313 / 12986 → 64%
-    expect(html).toContain('width:64%');
+    // 世豪 2026-10-07 裁定：workbuddy/qoder 都只渲染两行纯数字，不画进度条。
+    expect(html).not.toContain('width:');
     expect(html).toContain('plugin_quota.expires_24h');
     expect(html).toContain('>0<');
     expect(html).not.toContain('plugin_quota.groups_toggle');
@@ -148,14 +148,14 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
     expect(html).not.toContain('40,500');
     expect(html).not.toContain('width:');
   });
-  it('hides the bar when no bucket total parses even though summary size exists (qoder-shaped, synthetic)', () => {
+  it('renders no progress bar even with a balance and parseable buckets (2026-10-07 ruling, synthetic)', () => {
     const data = parsePluginQuota({
       summary: [
         { key: 'credits_remaining', label: '剩余积分', value: 998, unit: 'credits', format: 'number' },
         { key: 'credits_size', label: '总额度', value: 1000, unit: 'credits', format: 'number' },
       ],
       subscription: null,
-      groups: [{ displayName: 'g', buckets: [{ window: 'cycle', remainingFraction: 0.998, description: '赠送/签到额度：余 998 / 1000 积分（已用 2）' }] }],
+      groups: [{ displayName: 'g', buckets: [{ window: 'cycle', remainingFraction: 0.998, resetTime: '2026-10-08 00:02:40', description: '剩余 998 / 共 1000' }] }],
     });
     const html = renderToStaticMarkup(<PluginQuotaPanel state={{ status: 'success', data }} />);
     expect(html).toContain('998 credits');

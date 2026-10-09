@@ -343,6 +343,13 @@ func classifyExecutorCacheInputMode(executorType string) (string, bool) {
 	if strings.Contains(executor, "claude") {
 		return CacheInputModeSeparate, true
 	}
+	// KimiExecutor (fork delegation path, responses-via-claude) keeps Anthropic
+	// usage semantics: input_tokens excludes cache reads (来财 2026-10-09 实测，
+	// 世豪裁定). Upstream's generic "kimi" included-marker targets OpenAI-style
+	// direct upstreams and must not claim this executor.
+	if strings.Contains(executor, "kimiexecutor") {
+		return CacheInputModeSeparate, true
+	}
 	for _, marker := range []string{
 		"openaicompat", "openai_compat", "openai-compat", "openai",
 		"codex", "gemini", "aistudio", "ai_studio", "ai-studio",
@@ -368,6 +375,11 @@ func classifyProviderCacheInputMode(provider string) (string, bool) {
 		return CacheInputModeReadIncludedCreationSeparate, true
 	}
 	if strings.Contains(provider, "anthropic") || strings.Contains(provider, "claude") {
+		return CacheInputModeSeparate, true
+	}
+	// Provider kimi on this fork is exclusively the delegation path with
+	// Anthropic-style usage (来财 2026-10-09 实测，世豪裁定).
+	if provider == "kimi" {
 		return CacheInputModeSeparate, true
 	}
 	for _, marker := range []string{

@@ -16,10 +16,10 @@ import (
 const (
 	UsageCacheAccountingMigrationName            = "usage_cache_accounting_v2"
 	UsageCacheAccountingSemanticsRevisionKey     = "usage_cache_accounting_semantics_revision"
-	// Bumped 2→3 (世豪 2026-10-09 裁定): executorAdapter + qoder/workbuddy joined
-	// the included-in-input classification, so all previously misclassified
-	// plugin-provider rows must be recomputed on next start.
-	CurrentUsageCacheAccountingSemanticsRevision = 3
+	// Bumped 3→4 (世豪 2026-10-09 裁定): KimiExecutor/provider kimi moved to
+	// separate (Anthropic-style delegation usage); 2→3 covered the plugin
+	// reclassification. All affected rows must be recomputed on next start.
+	CurrentUsageCacheAccountingSemanticsRevision = 4
 )
 
 const usageCacheAccountingCandidatePredicate = `(coalesce(cached_tokens, 0) != 0
@@ -938,6 +938,9 @@ func reconcileSemanticsRevisionInTx(ctx context.Context, tx *sql.Tx, state *Stat
 			or lower(trim(coalesce(executor_type, ''))) = 'executoradapter'
 			or lower(trim(coalesce(provider, ''))) = 'qoder'
 			or lower(trim(coalesce(provider, ''))) = 'workbuddy'
+			-- fork rev 4: kimi delegation rows reclassified from included to separate.
+			or lower(trim(coalesce(executor_type, ''))) = 'kimiexecutor'
+			or lower(trim(coalesce(provider, ''))) = 'kimi'
 		)
 		limit 1
 	)`

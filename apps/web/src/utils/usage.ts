@@ -486,6 +486,10 @@ const classifyExecutorCacheInputMode = (value: unknown): CacheInputMode | undefi
   if (!executor) return undefined;
   if (executor === 'devinexecutor') return 'read_included_creation_separate';
   if (executor.includes('claude')) return 'separate_from_input';
+  // KimiExecutor (fork delegation path, responses-via-claude) keeps Anthropic
+  // usage semantics: input_tokens excludes cache reads (来财 2026-10-09 实测，
+  // 世豪裁定). Mirrors the Go side of the same revision.
+  if (executor.includes('kimiexecutor')) return 'separate_from_input';
   if (
     [
       'openaicompat',
@@ -516,6 +520,9 @@ const classifyProviderCacheInputMode = (value: unknown): CacheInputMode | undefi
   if (provider.includes('anthropic') || provider.includes('claude')) {
     return 'separate_from_input';
   }
+  // Provider kimi on this fork is exclusively the delegation path with
+  // Anthropic-style usage (来财 2026-10-09 实测，世豪裁定).
+  if (provider === 'kimi') return 'separate_from_input';
   if (
     [
       'openai',

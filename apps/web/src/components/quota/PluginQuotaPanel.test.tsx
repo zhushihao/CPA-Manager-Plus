@@ -29,14 +29,15 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
 
   it('renders exactly two native metric rows (balance and 24h expiring) without redundant status sentences (real fixture)', () => {
     vi.useFakeTimers();
-    // 自 2026-10-07 12:00 起的 24h 窗口内，真实 fixture 只有 "2026-10-08 00:02:40"（剩余 0）一个桶。
-    vi.setSystemTime(new Date('2026-10-07T12:00:00').getTime());
+    // 2026-10-09 来财重建 fixture：[2026-10-09 20:00, +24h) 窗口内恰有两个桶
+    // （2026-10-10 00:55:11 与 11:43:35，均剩余 0），24h 行合计 0。
+    vi.setSystemTime(new Date('2026-10-09T20:00:00').getTime());
     const html = renderToStaticMarkup(<PluginQuotaPanel state={{ status: 'success', data: parsePluginQuota(workbuddy.response.body), fetchedAtMs: 1000 }} />);
     expect(html).not.toContain('plugin_quota.success');
     expect(html).not.toContain('plugin_quota.last_success');
     expect(html.match(/data-plugin-quota-metric="true"/g)).toHaveLength(2);
     expect(html).toContain('剩余积分');
-    expect(html).toContain('8,313 credits');
+    expect(html).toContain('7,505 credits');
     // 世豪 2026-10-07 裁定：workbuddy/qoder 都只渲染两行纯数字，不画进度条。
     expect(html).not.toContain('width:');
     expect(html).toContain('plugin_quota.expires_24h');
@@ -52,14 +53,14 @@ describe('plugin panel: real fixture and explicitly synthetic edge cases', () =>
   });
   it('keeps stale data visible under error status with the alert message (real fixture)', () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-10-07T12:00:00').getTime());
+    vi.setSystemTime(new Date('2026-10-09T20:00:00').getTime());
     const html = renderToStaticMarkup(<PluginQuotaPanel state={{ status: 'error', data: parsePluginQuota(workbuddy.response.body), fetchedAtMs: 1000, error: 'synthetic 404' }} />);
     expect(html).toContain('synthetic 404');
     expect(html).not.toContain('plugin_quota.stale');
     expect(html).not.toContain('plugin_quota.loading');
     expect(html).not.toContain('plugin_quota.last_success');
     expect(html).not.toContain('plugin_quota.success');
-    expect(html).toContain('8,313 credits');
+    expect(html).toContain('7,505 credits');
     expect(html).toContain('>0<');
   });
   it('renders no refreshing or stale notice while loading, keeping the last data visible (synthetic)', () => {

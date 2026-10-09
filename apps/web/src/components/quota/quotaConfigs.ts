@@ -698,7 +698,14 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
     ...buildQuotaCredentialIdentity(file),
   }),
   buildSuccessState: (data, file, currentState) => {
-    const resetEvidence = mergeCodexResetCreditsEvidence(currentState, data);
+    const resetEvidence = mergeCodexResetCreditsEvidence(currentState, {
+      ...data,
+      // CODEX_CONFIG is the full refresh. An explicit dedicated count-only
+      // response is authoritative; an actual endpoint failure is already
+      // identified as 'summary' by fetchCodexQuota.
+      resetCreditsCountSource: data.resetCreditsCountSource ??
+        (data.rateLimitResetCreditsError ? 'summary' : 'dedicated'),
+    });
     return {
       status: 'success',
       windows: data.windows,
@@ -714,6 +721,7 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
       spendControlReached: data.spendControlReached,
       spendControlIndividualLimit: data.spendControlIndividualLimit,
       rateLimitResetCreditsAvailableCount: resetEvidence.rateLimitResetCreditsAvailableCount,
+      resetCreditsCountSource: resetEvidence.resetCreditsCountSource,
       rateLimitResetCredits: resetEvidence.rateLimitResetCredits,
       rateLimitResetCreditsError: resetEvidence.rateLimitResetCreditsError,
       resetCreditsEvidenceAtMs: resetEvidence.resetCreditsEvidenceAtMs,
@@ -762,6 +770,7 @@ export const CODEX_SUMMARY_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> 
       spendControlReached: data.spendControlReached,
       spendControlIndividualLimit: data.spendControlIndividualLimit,
       rateLimitResetCreditsAvailableCount: resetEvidence.rateLimitResetCreditsAvailableCount,
+      resetCreditsCountSource: resetEvidence.resetCreditsCountSource,
       rateLimitResetCredits: resetEvidence.rateLimitResetCredits,
       rateLimitResetCreditsError: resetEvidence.rateLimitResetCreditsError,
       resetCreditsEvidenceAtMs: resetEvidence.resetCreditsEvidenceAtMs,

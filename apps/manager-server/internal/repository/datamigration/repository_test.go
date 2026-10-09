@@ -1083,7 +1083,7 @@ func TestUsageCacheAccountingSemanticsRevision18_1_CompletedDevinData(t *testing
 	runUsageCacheAccountingToCompletion(t, repo, 10)
 
 	assertAccounting(t, db, "devin-838", "read_included_creation_separate", 1767, 229788, 228021, 0, 231563)
-	assertRevision(t, db, "2")
+	assertRevision(t, db, "3")
 }
 
 func TestUsageCacheAccountingSemanticsRevision18_2_NoDevinData(t *testing.T) {
@@ -1115,7 +1115,7 @@ func TestUsageCacheAccountingSemanticsRevision18_2_NoDevinData(t *testing.T) {
 	if state.Status != StatusCompleted {
 		t.Fatalf("state.Status = %q, want %q", state.Status, StatusCompleted)
 	}
-	assertRevision(t, db, "2")
+	assertRevision(t, db, "3")
 }
 
 func TestUsageCacheAccountingSemanticsRevision18_3_Idempotency(t *testing.T) {
@@ -1143,7 +1143,7 @@ func TestUsageCacheAccountingSemanticsRevision18_3_Idempotency(t *testing.T) {
 		t.Fatalf("first discover: %v", err)
 	}
 	runUsageCacheAccountingToCompletion(t, repo, 10)
-	assertRevision(t, db, "2")
+	assertRevision(t, db, "3")
 
 	// 第二次调用 Discover
 	state2, err := repo.DiscoverUsageCacheAccounting(context.Background())
@@ -1199,7 +1199,7 @@ func TestUsageCacheAccountingSemanticsRevision18_4_UnappliedStagingCleared(t *te
 	if state.Status != StatusPending || state.TargetEventID != 1 {
 		t.Fatalf("state = %#v, want pending target=1", state)
 	}
-	assertRevision(t, db, "2")
+	assertRevision(t, db, "3")
 }
 
 func TestUsageCacheAccountingSemanticsRevision18_5_AppliedMigrationNotResetMidway(t *testing.T) {
@@ -1258,7 +1258,7 @@ func TestUsageCacheAccountingSemanticsRevision18_5_AppliedMigrationNotResetMidwa
 	// 跑完新 pass
 	runUsageCacheAccountingToCompletion(t, repo, 10)
 	assertAccounting(t, db, "devin-838", "read_included_creation_separate", 1767, 229788, 228021, 0, 231563)
-	assertRevision(t, db, "2")
+	assertRevision(t, db, "3")
 }
 
 func TestUsageCacheAccountingSemanticsRevision18_6_DerivedRebuild(t *testing.T) {
@@ -1355,7 +1355,7 @@ func TestUsageCacheAccountingSemanticsRevision18_7_ActiveStatePersistsRevisionWi
 			}
 
 			// 验证 revision 确实在事务提交后持久化（不是仅在当前未提交的事务中可见）
-			assertRevision(t, db, "2")
+			assertRevision(t, db, "3")
 
 			// 再次调用 Discover，确认状态依然保持当前 active 状态，不被重置
 			state2, err := repo.DiscoverUsageCacheAccounting(context.Background())
@@ -1464,7 +1464,7 @@ func TestUsageCacheAccountingSemanticsRevision18_8_HistoricalDevinPredicates(t *
 				0,
 				tt.fixture.Total,
 			)
-			assertRevision(t, db, "2")
+			assertRevision(t, db, "3")
 		})
 	}
 }

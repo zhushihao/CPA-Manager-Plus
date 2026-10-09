@@ -16,7 +16,10 @@ import (
 const (
 	UsageCacheAccountingMigrationName            = "usage_cache_accounting_v2"
 	UsageCacheAccountingSemanticsRevisionKey     = "usage_cache_accounting_semantics_revision"
-	CurrentUsageCacheAccountingSemanticsRevision = 2
+	// Bumped 2→3 (世豪 2026-10-09 裁定): executorAdapter + qoder/workbuddy joined
+	// the included-in-input classification, so all previously misclassified
+	// plugin-provider rows must be recomputed on next start.
+	CurrentUsageCacheAccountingSemanticsRevision = 3
 )
 
 const usageCacheAccountingCandidatePredicate = `(coalesce(cached_tokens, 0) != 0
@@ -930,6 +933,11 @@ func reconcileSemanticsRevisionInTx(ctx context.Context, tx *sql.Tx, state *Stat
 			or lower(trim(coalesce(requested_model, ''))) like 'devin/%'
 			or lower(trim(coalesce(model, ''))) = 'devin'
 			or lower(trim(coalesce(model, ''))) like 'devin/%'
+			-- fork rev 3 (世豪 2026-10-09 裁定): plugin rows reclassified from
+			-- separate to included must also trigger rediscovery.
+			or lower(trim(coalesce(executor_type, ''))) = 'executoradapter'
+			or lower(trim(coalesce(provider, ''))) = 'qoder'
+			or lower(trim(coalesce(provider, ''))) = 'workbuddy'
 		)
 		limit 1
 	)`

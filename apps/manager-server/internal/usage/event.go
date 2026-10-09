@@ -347,6 +347,10 @@ func classifyExecutorCacheInputMode(executorType string) (string, bool) {
 		"openaicompat", "openai_compat", "openai-compat", "openai",
 		"codex", "gemini", "aistudio", "ai_studio", "ai-studio",
 		"antigravity", "xai", "kimi",
+		// Plugin-host executors (qoder/workbuddy/mimo/trae/zcode DLL plugins)
+		// all report as this generic name; their upstreams are OpenAI-style
+		// and include cached tokens in input_tokens (世豪 2026-10-09 裁定).
+		"executoradapter",
 	} {
 		if strings.Contains(executor, marker) {
 			return CacheInputModeIncluded, true
@@ -369,6 +373,9 @@ func classifyProviderCacheInputMode(provider string) (string, bool) {
 	for _, marker := range []string{
 		"openai", "codex", "gemini", "vertex", "aistudio", "ai_studio",
 		"ai-studio", "interaction", "antigravity", "xai", "kimi", "moonshot",
+		// Plugin providers (qoder/workbuddy) whose executor name is the
+		// generic executorAdapter and whose model names carry no markers.
+		"qoder", "workbuddy",
 	} {
 		if strings.Contains(provider, marker) {
 			return CacheInputModeIncluded, true

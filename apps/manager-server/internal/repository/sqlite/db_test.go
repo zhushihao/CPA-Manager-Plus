@@ -36,7 +36,7 @@ func TestDataSourceNameEncodesWindowsDrivePath(t *testing.T) {
 	wantPragmas := []string{
 		"busy_timeout(5000)",
 		"foreign_keys(1)",
-		"synchronous(FULL)",
+		"synchronous(NORMAL)",
 	}
 	if pragmas := parsed.Query()["_pragma"]; !slices.Equal(pragmas, wantPragmas) {
 		t.Fatalf("pragmas = %q, want %q", pragmas, wantPragmas)
@@ -308,7 +308,7 @@ func assertConnectionPragmas(t *testing.T, conn *sql.Conn) {
 	}{
 		{name: "busy timeout", query: "pragma busy_timeout", want: 5000},
 		{name: "foreign keys", query: "pragma foreign_keys", want: 1},
-		{name: "synchronous", query: "pragma synchronous", want: 2},
+		{name: "synchronous", query: "pragma synchronous", want: 1},
 	} {
 		var got int
 		if err := conn.QueryRowContext(context.Background(), test.query).Scan(&got); err != nil {

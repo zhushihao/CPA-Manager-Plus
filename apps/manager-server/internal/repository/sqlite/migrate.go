@@ -226,7 +226,7 @@ func Migrate(db *sql.DB) error {
 
 	statements := []string{
 		`pragma journal_mode = WAL`,
-		`pragma synchronous = FULL`,
+		`pragma synchronous = NORMAL`,
 		`pragma busy_timeout = 5000`,
 		`pragma foreign_keys = ON`,
 		`create table if not exists usage_events (
